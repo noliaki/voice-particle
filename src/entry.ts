@@ -1,6 +1,7 @@
 import * as PIXI from 'pixi.js'
 import getTextPosition, { Position } from './GetTextPosition'
 import HSV2RGB from './HSV2RGB'
+import { easeOutCubic } from './Ease'
 import _suffle from 'lodash/shuffle'
 
 interface Node extends PIXI.Sprite {
@@ -8,6 +9,14 @@ interface Node extends PIXI.Sprite {
   goalX: number
   goalY: number
   size: number
+  time: number
+  duration: number
+  beginX: number
+  beginY: number
+  beginSize: number
+  goalSize: number
+  isGather: boolean
+  staggerR: number
 }
 
 const config = {
@@ -52,7 +61,14 @@ $btn.addEventListener('click', (event: Event): void => {
 
     node.goalX = position.x
     node.goalY = position.y
-    node.size = 5
+
+    node.beginX = node.x
+    node.beginY = node.y
+
+    node.beginSize = node.size
+    node.goalSize = Math.random() * 5 + 5
+
+    node.time = 0
   }
 }, false)
 
@@ -74,16 +90,16 @@ function createNodes (texture: PIXI.BaseTexture): void {
 
     node.anchor.set(0.5, 0.5)
 
-    node.x = r * Math.cos(radian) + (window.innerWidth / 2)
-    node.y = r * Math.sin(radian) + (window.innerHeight / 2)
     node.alpha = 0.7
-    node.size = 50
+    node.size = node.beginSize = node.goalSize = 50
+    node.x = node.beginX = node.goalX = (r + node.size) * Math.cos(radian) + (window.innerWidth / 2)
+    node.y = node.beginY = node.goalY = (r + node.size) * Math.sin(radian) + (window.innerHeight / 2)
     node.width = node.height = node.size
     node.tintRadian = 0
     node.tint = HSV2RGB(node.tintRadian, 0.8, 0.6)
-
-    node.goalX = node.x
-    node.goalY = node.y
+    node.staggerR = Math.random() * 50
+    node.time = 0
+    node.duration = Math.random() * 3 + 3
 
     nodes.push(node)
     container.addChild(node)
@@ -91,15 +107,25 @@ function createNodes (texture: PIXI.BaseTexture): void {
 }
 
 function update (): void {
-  for (let i: number = 0; i < config.particles; i ++) {
-    const node: Node = nodes[i]
+  const len: number = config.particles
 
-    node.x += (node.goalX - node.x) / 20
-    node.y += (node.goalY - node.y) / 20
-    node.tintRadian += 0.5
+  for (let i: number = 0; i < len; i ++) {
+    const node: Node = nodes[i]
+    node.tintRadian += 0.4
     node.tint = HSV2RGB(node.tintRadian % 360, 0.8, 0.6)
 
-    node.width += (node.size - node.width) / 20
-    node.height += (node.size - node.height) / 20
+    const d: number = easeOutCubic(node.time / node.duration)
+
+    node.x = node.beginX + d * (node.goalX - node.beginX) + node.staggerR * Math.cos(Math.PI / 180 * node.tintRadian)
+    node.y = node.beginY + d * (node.goalY - node.beginY) + node.staggerR * Math.sin(Math.PI / 180 * node.tintRadian)
+    node.size = node.beginSize + d * (node.goalSize - node.beginSize)
+
+    node.width = node.height = node.size
+
+    node.time += 0.1
+
+    if (node.time >= node.duration) {
+      node.time = node.duration
+    }
   }
 }
