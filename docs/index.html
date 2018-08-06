@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="js">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    html,
+    body,
+    canvas {
+      margin: 0;
+      padding: 0;
+    }
+    canvas {
+      display: block;
+    }
+    .inputBox {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+  </style>
+  <title>Voice Particle</title>
+</head>
+<body>
+<canvas id="app"></canvas>
+<div class="inputBox">
+  <input type="text" id="inputText">
+  <button type="button" id="fixText">GO</button>
+</div>
+<script src="js/index.js"></script>
+</body>
+</html>

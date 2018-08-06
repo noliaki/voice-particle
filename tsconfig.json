@@ -3,9 +3,6 @@
     "allowJs": true,
     "allowSyntheticDefaultImports": true,
     "alwaysStrict": true,
-    "lib": [
-      "dom"
-    ],
     "module": "es2015",
     "moduleResolution": "node",
     "target": "es2015"

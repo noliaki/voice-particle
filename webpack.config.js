@@ -10,9 +10,9 @@ const plugins = [
 const config = {
   mode: process.env.NODE_ENV,
   context: path.resolve('src'),
-  entry: 'entry.ts',
+  entry: './entry.ts',
   output: {
-    path: path.resolve('dist'),
+    path: path.resolve('docs', 'js'),
     filename: 'index.js'
   },
   resolve: {

@@ -1,0 +1,17 @@
+const EaseIn: Function = (power: number): Function => (t: number): number => Math.pow(t, power)
+const EaseOut: Function = (power: number): Function => (t: number): number => 1 - Math.abs(Math.pow(t - 1, power))
+const EaseInOut: Function = (power: number): Function => (t: number): number => t < 0.5 ? EaseIn(power)(t * 2) / 2 : EaseOut(power)(t * 2 - 1) / 2 + 0.5
+
+export const linear: Function = EaseInOut(1)
+export const easeInQuad: Function = EaseIn(2)
+export const easeOutQuad: Function = EaseOut(2)
+export const easeInOutQuad: Function = EaseInOut(2)
+export const easeInCubic: Function = EaseIn(3)
+export const easeOutCubic: Function = EaseOut(3)
+export const easeInOutCubic: Function = EaseInOut(3)
+export const easeInQuart: Function = EaseIn(4)
+export const easeOutQuart: Function = EaseOut(4)
+export const easeInOutQuart: Function = EaseInOut(4)
+export const easeInQuint: Function = EaseIn(5)
+export const easeOutQuint: Function = EaseOut(5)
+export const easeInOutQuint: Function = EaseInOut(5)
