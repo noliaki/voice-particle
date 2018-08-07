@@ -108,11 +108,12 @@ function update (): void {
     const node: Node = nodes[i]
     const positionTime: number = node.positionTime < 0 ? 0 : node.positionTime
     const sizeTime: number = node.positionTime < 0 ? 0 : node.positionTime
+
     const positionD: number = node.positionEase(positionTime / node.duration)
     const sizeD: number = node.sizeEase(sizeTime / node.duration)
 
     if (Math.random() > 0.9999) {
-      node.size = node.beginSize = node.size * (Math.random() * 30 + 30)
+      node.size = node.beginSize = node.size * (Math.random() * 10 + 10)
       node.sizeTime = 0
 
       node.s = 0
@@ -123,8 +124,10 @@ function update (): void {
       container.addChild(node)
     }
 
-    const staggerX: number = node.isFrashing ? 0 : node.staggerRx * Math.cos(radius * node.tintRadian * node.staggerSpeed) * node.size / 10
-    const staggerY: number = node.isFrashing ? 0 : node.staggerRy * Math.sin(radius * node.tintRadian * node.staggerSpeed) * node.size / 10
+    const staggerRadian: number = radius * node.tintRadian * node.staggerSpeed
+
+    const staggerX: number = node.isFrashing ? 0 : node.staggerRx * Math.cos(staggerRadian) * node.size / 10
+    const staggerY: number = node.isFrashing ? 0 : node.staggerRy * Math.sin(staggerRadian) * node.size / 10
 
     node.x = node.beginX + positionD * (node.goalX - node.beginX) + staggerX
     node.y = node.beginY + positionD * (node.goalY - node.beginY) + staggerY
@@ -132,8 +135,8 @@ function update (): void {
 
     node.width = node.height = node.size
 
-    node.tintRadian += 0.4
-    node.tint = HSV2RGB(node.tintRadian % 360, node.s, node.v)
+    node.tintRadian = (node.tintRadian + 0.4) % 360
+    node.tint = HSV2RGB(node.tintRadian, node.s, node.v)
 
     node.positionTime += 0.1
     node.sizeTime += 0.1
@@ -197,7 +200,7 @@ function flush (): void {
   const centerX: number = winWidth / 2
   const centerY: number = winHeight / 2
 
-  const r: number = Math.sqrt(winWidth * winWidth + winHeight * winHeight)
+  const r: number = Math.sqrt(winWidth * winWidth + winHeight * winHeight) + 500
   const radius: number = Math.PI / 180
 
   for (let i: number = 0; i < particlesLen; i ++) {
