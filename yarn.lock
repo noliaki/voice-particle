@@ -3530,6 +3530,10 @@ signal-exit@^3.0.0, signal-exit@^3.0.2:
   version "3.0.2"
   resolved "https://registry.yarnpkg.com/signal-exit/-/signal-exit-3.0.2.tgz#b5fdc08f1287ea1178628e415e25132b73646c6d"
 
+simplenoise@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/simplenoise/-/simplenoise-1.0.1.tgz#99e0501e90ef4070165d9b1a5267c461a7fde359"
+
 snapdragon-node@^2.0.1:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/snapdragon-node/-/snapdragon-node-2.1.1.tgz#6c175f86ff14bdb0724563e8f3c1b021a286853b"

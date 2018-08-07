@@ -23,4 +23,5 @@ export default class EventEmitter {
 export class EventName {
   public static ON_WIN_RESIZE = 'onWinReisze'
   public static ON_WIN_LOAD = 'onWinLoad'
+  public static ON_INPUT_TEXT = 'onInputText'
 }

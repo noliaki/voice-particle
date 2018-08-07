@@ -1,6 +1,13 @@
 const canvas: HTMLCanvasElement = document.createElement('canvas')
 const context: CanvasRenderingContext2D = canvas.getContext('2d')
 
+declare const FontFace: any
+
+const font: any = new FontFace('Hannari', 'url(https://fonts.gstatic.com/ea/hannari/v1/Hannari-Regular.ttf)')
+font.load().then(result => {
+  console.log(result)
+})
+
 export interface Position {
   x: number
   y: number
@@ -13,8 +20,11 @@ export default (text: string): Position[] => {
   canvas.width = canvasWidth
   canvas.height = canvasHeight
 
+  const fontSize: number = 80 / text.length
+  const offsetY: number = (window.innerHeight - fontSize / 100 * window.innerWidth) / 2
+
   context.textBaseline = 'top'
-  context.font = `${80 / text.length}vw sans-serif`
+  context.font = `${fontSize}vw "Hannari", sans-serif`
   const measure: TextMetrics = context.measureText(text)
   context.fillText(text, (window.innerWidth - measure.width) / 2, 0)
 
@@ -25,7 +35,7 @@ export default (text: string): Position[] => {
     if (imageData[i + 3] === 255) {
       positions.push({
         x: (i / 4) % canvasWidth,
-        y: Math.floor((i / 4) / canvasWidth)
+        y: Math.floor((i / 4) / canvasWidth) + offsetY
       })
     }
   }
