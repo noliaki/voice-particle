@@ -6,6 +6,8 @@ import { Position } from './GetTextPosition'
 import './Action'
 import noise from 'simplenoise'
 
+console.log(noise.perlin2(1, 100))
+
 interface Node extends PIXI.Sprite {
   tintRadian: number
   s: number
@@ -104,6 +106,8 @@ function update (): void {
   const len: number = particlesLen
   const radius: number = Math.PI / 180
 
+  const now: number = Date.now() / 500
+
   for (let i: number = 0; i < len; i ++) {
     const node: Node = nodes[i]
     const positionTime: number = node.positionTime < 0 ? 0 : node.positionTime
@@ -124,13 +128,11 @@ function update (): void {
       container.addChild(node)
     }
 
-    const staggerRadian: number = radius * node.tintRadian * node.staggerSpeed
+    const noiseX: number = node.isFrashing ? 0 : node.staggerRx * noise.perlin2(now / (i + 1), now)
+    const noiseY: number = node.isFrashing ? 0 : node.staggerRy * noise.perlin2(now, now / (i + 1))
 
-    const staggerX: number = node.isFrashing ? 0 : node.staggerRx * Math.cos(staggerRadian) * node.size / 10
-    const staggerY: number = node.isFrashing ? 0 : node.staggerRy * Math.sin(staggerRadian) * node.size / 10
-
-    node.x = node.beginX + positionD * (node.goalX - node.beginX) + staggerX
-    node.y = node.beginY + positionD * (node.goalY - node.beginY) + staggerY
+    node.x = node.beginX + positionD * (node.goalX - node.beginX) + noiseX
+    node.y = node.beginY + positionD * (node.goalY - node.beginY) + noiseY
     node.size = node.beginSize + sizeD * (node.goalSize - node.beginSize)
 
     node.width = node.height = node.size
@@ -189,8 +191,8 @@ function setTextPosition (positions: Position[]): void {
     node.sizeTime = 0
   }
 
-  clearTimeout(flushTimer)
-  flushTimer = setTimeout(flush, 3000)
+  // clearTimeout(flushTimer)
+  // flushTimer = setTimeout(flush, 3000)
 }
 
 function flush (): void {
