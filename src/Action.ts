@@ -15,3 +15,7 @@ $btn.addEventListener('click', (event: Event): void => {
   EventEmitter.emit(EventName.ON_INPUT_TEXT, positions)
 
 }, false)
+
+document.addEventListener('mousewheel', (event: MouseEvent): void => {
+  EventEmitter.emit(EventName.ON_MOUSE_WHEEL)
+})

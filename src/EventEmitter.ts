@@ -24,4 +24,5 @@ export class EventName {
   public static ON_WIN_RESIZE = 'onWinReisze'
   public static ON_WIN_LOAD = 'onWinLoad'
   public static ON_INPUT_TEXT = 'onInputText'
+  public static ON_MOUSE_WHEEL = 'onMouseWheel'
 }

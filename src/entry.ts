@@ -12,6 +12,10 @@ interface Node extends PIXI.Sprite {
   tintRadian: number
   s: number
   v: number
+  dx: number
+  dy: number
+  goalDx: number
+  goalDy: number
   goalS: number
   goalV: number
   goalX: number
@@ -69,6 +73,10 @@ EventEmitter.on(EventName.ON_INPUT_TEXT, (positions: Position[]): void => {
   setTextPosition(positions)
 })
 
+EventEmitter.on(EventName.ON_MOUSE_WHEEL, (): void => {
+  flashAll()
+})
+
 function createNodes (texture: PIXI.BaseTexture): void {
   const r: number = Math.sqrt(window.innerWidth * window.innerWidth + window.innerHeight * window.innerHeight)
 
@@ -82,6 +90,7 @@ function createNodes (texture: PIXI.BaseTexture): void {
     node.size = node.beginSize = node.goalSize = 50
     node.x = node.beginX = node.goalX = (r + node.size) * Math.cos(radian) + (window.innerWidth / 2)
     node.y = node.beginY = node.goalY = (r + node.size) * Math.sin(radian) + (window.innerHeight / 2)
+    node.dx = node.dy = node.goalDx = node.goalDy = 0
     node.width = node.height = node.size
     node.tintRadian = 0
     node.s = node.goalS = 0.8
@@ -111,13 +120,13 @@ function update (): void {
   for (let i: number = 0; i < len; i ++) {
     const node: Node = nodes[i]
     const positionTime: number = node.positionTime < 0 ? 0 : node.positionTime
-    const sizeTime: number = node.positionTime < 0 ? 0 : node.positionTime
+    const sizeTime: number = node.sizeTime < 0 ? 0 : node.sizeTime
 
     const positionD: number = node.positionEase(positionTime / node.duration)
     const sizeD: number = node.sizeEase(sizeTime / node.duration)
 
-    if (Math.random() > 0.9999) {
-      node.size = node.beginSize = node.size * (Math.random() * 10 + 10)
+    if (Math.random() > 0.99999) {
+      node.size = node.beginSize = node.size * (Math.random() * 10 + 5)
       node.sizeTime = 0
 
       node.s = 0
@@ -131,8 +140,8 @@ function update (): void {
     const noiseX: number = node.isFrashing ? 0 : node.staggerRx * noise.perlin2(now / (i + 1), now)
     const noiseY: number = node.isFrashing ? 0 : node.staggerRy * noise.perlin2(now, now / (i + 1))
 
-    node.x = node.beginX + positionD * (node.goalX - node.beginX) + noiseX
-    node.y = node.beginY + positionD * (node.goalY - node.beginY) + noiseY
+    node.x = node.beginX + positionD * (node.goalX - node.beginX) + noiseX + node.dx
+    node.y = node.beginY + positionD * (node.goalY - node.beginY) + noiseY + node.dy
     node.size = node.beginSize + sizeD * (node.goalSize - node.beginSize)
 
     node.width = node.height = node.size
@@ -145,6 +154,18 @@ function update (): void {
 
     node.s += 0.03
     node.v -= 0.03
+
+    if (Math.abs(node.goalDx - node.dx) < 0.1) {
+      node.dx = 0
+    } else {
+      node.dx += (node.goalDx - node.dx) / 20
+    }
+
+    if (Math.abs(node.goalDy - node.dy) < 0.1) {
+      node.dy = 0
+    } else {
+      node.dy += (node.goalDy - node.dy) / 20
+    }
 
     if (node.s >= node.goalS) {
       node.s = node.goalS
@@ -221,5 +242,27 @@ function flush (): void {
 
     node.positionTime = node.sizeTime = -node.positionDelay
     node.positionEase = node.sizeEase = easeInOutCubic
+  }
+}
+
+function flashAll (): void {
+  console.log('RUN MOUSE')
+  for (let i: number = 0; i < particlesLen; i ++) {
+    const node: Node = nodes[i]
+
+    node.dx = node.dx === 0 ? node.dx = Math.random() * -20 + 10 : node.dx * 1.5
+    node.dy = node.dy === 0 ? node.dy = Math.random() * -20 + 10 : node.dy * 1.5
+
+    node.sizeTime = 0
+
+    node.size = node.beginSize = Math.min(node.size * 5, 50)
+
+    // node.goalSize = node.size
+    // node.beginSize = node.size = Math.min(node.size * 5, 50)
+
+    // node.sizeTime = 0
+    node.sizeEase = easeOutCubic
+
+    // node.isFrashing = true
   }
 }
