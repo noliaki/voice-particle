@@ -113,7 +113,6 @@ function createNodes (texture: PIXI.BaseTexture): void {
 
 function update (): void {
   const len: number = particlesLen
-  const radius: number = Math.PI / 180
 
   const now: number = Date.now() / 500
 
@@ -139,12 +138,13 @@ function update (): void {
 
     const noiseX: number = node.isFrashing ? 0 : node.staggerRx * noise.perlin2(now / (i + 1), now)
     const noiseY: number = node.isFrashing ? 0 : node.staggerRy * noise.perlin2(now, now / (i + 1))
+    const noiseScale: number = node.isFrashing ? 0 : 10 * noise.perlin2(now / (i + 1), now)
 
     node.x = node.beginX + positionD * (node.goalX - node.beginX) + noiseX + node.dx
     node.y = node.beginY + positionD * (node.goalY - node.beginY) + noiseY + node.dy
     node.size = node.beginSize + sizeD * (node.goalSize - node.beginSize)
 
-    node.width = node.height = node.size
+    node.width = node.height = node.size + noiseScale
 
     node.tintRadian = (node.tintRadian + 0.4) % 360
     node.tint = HSV2RGB(node.tintRadian, node.s, node.v)
@@ -246,7 +246,6 @@ function flush (): void {
 }
 
 function flashAll (): void {
-  console.log('RUN MOUSE')
   for (let i: number = 0; i < particlesLen; i ++) {
     const node: Node = nodes[i]
 
