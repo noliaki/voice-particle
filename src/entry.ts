@@ -136,12 +136,15 @@ function update (): void {
       container.addChild(node)
     }
 
-    const noiseX: number = node.isFrashing ? 0 : node.staggerRx * noise.perlin2(now / (i + 1), now)
-    const noiseY: number = node.isFrashing ? 0 : node.staggerRy * noise.perlin2(now, now / (i + 1))
-    const noiseScale: number = node.isFrashing ? 0 : 10 * noise.perlin2(now / (i + 1), now)
+    const noiseX: number = node.isFrashing ? 0 : node.staggerRx * noise.perlin2(now - i, now)
+    const noiseY: number = node.isFrashing ? 0 : node.staggerRy * noise.perlin2(now, now - i)
+    const noiseScale: number = node.isFrashing ? 0 : 10 * noise.perlin2(i / now, now)
 
-    node.x = node.beginX + positionD * (node.goalX - node.beginX) + noiseX + node.dx
-    node.y = node.beginY + positionD * (node.goalY - node.beginY) + noiseY + node.dy
+    const nodeX: number = (node.dx ? node.x + node.dx : node.beginX + positionD * (node.goalX - node.beginX)) + noiseX
+    const nodeY: number = (node.dy ? node.y + node.dy : node.beginY + positionD * (node.goalY - node.beginY)) + noiseY
+
+    node.x = nodeX
+    node.y = nodeY
     node.size = node.beginSize + sizeD * (node.goalSize - node.beginSize)
 
     node.width = node.height = node.size + noiseScale
@@ -155,17 +158,8 @@ function update (): void {
     node.s += 0.03
     node.v -= 0.03
 
-    if (Math.abs(node.goalDx - node.dx) < 0.1) {
-      node.dx = 0
-    } else {
-      node.dx += (node.goalDx - node.dx) / 20
-    }
-
-    if (Math.abs(node.goalDy - node.dy) < 0.1) {
-      node.dy = 0
-    } else {
-      node.dy += (node.goalDy - node.dy) / 20
-    }
+    node.dx += (node.goalDx - node.dx) / 20
+    node.dy += (node.goalDy - node.dy) / 20
 
     if (node.s >= node.goalS) {
       node.s = node.goalS
@@ -199,6 +193,8 @@ function setTextPosition (positions: Position[]): void {
     const node: Node = nodes[i]
     const position = positions[i % positionsLen]
 
+    node.dx = node.goalDx = node.dy = node.goalDy = 0
+
     node.goalX = position.x
     node.goalY = position.y
 
@@ -212,8 +208,8 @@ function setTextPosition (positions: Position[]): void {
     node.sizeTime = 0
   }
 
-  // clearTimeout(flushTimer)
-  // flushTimer = setTimeout(flush, 3000)
+  clearTimeout(flushTimer)
+  flushTimer = setTimeout(flush, 3000)
 }
 
 function flush (): void {
@@ -230,18 +226,11 @@ function flush (): void {
     const node: Node = nodes[i]
     const radian: number = (Math.random() * 360) * radius
 
-    node.goalX = centerX + r * Math.cos(radian)
-    node.goalY = centerY + r * Math.sin(radian)
+    node.goalDx = Math.random() * -6 + 3
+    node.goalDy = Math.random() * -6 + 3
 
-    node.beginX = node.x
-    node.beginY = node.y
-
-    node.beginSize = node.size
-
-    node.goalSize = Math.random() * 100 + 100
-
-    node.positionTime = node.sizeTime = -node.positionDelay
-    node.positionEase = node.sizeEase = easeInOutCubic
+    node.dx = Math.random() * -20 + 10
+    node.dy = Math.random() * -20 + 10
   }
 }
 
