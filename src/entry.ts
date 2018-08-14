@@ -6,7 +6,9 @@ import { Position } from './GetTextPosition'
 import './Action'
 import noise from 'simplenoise'
 
-console.log(noise.perlin2(1, 100))
+const audioContext: AudioContext = new AudioContext()
+const analyser: AnalyserNode = audioContext.createAnalyser()
+const frequencies: Uint8Array = new Uint8Array(analyser.frequencyBinCount)
 
 interface Node extends PIXI.Sprite {
   tintRadian: number
@@ -64,8 +66,16 @@ app.stage.addChild(container)
 
 PIXI.loader
   .add('orb', './img/orb.svg')
-  .load((loader, resources): void => {
+  .load(async (loader, resources): Promise<void> => {
     createNodes(resources.orb.texture)
+    const stream: MediaStream | void = await getUserMedia().catch(error => console.log(error))
+
+    if (!stream) return
+
+    audioContext
+      .createMediaStreamSource(stream)
+      .connect(analyser)
+
     app.ticker.add(update)
   })
 
@@ -87,9 +97,11 @@ function createNodes (texture: PIXI.BaseTexture): void {
     node.anchor.set(0.5, 0.5)
 
     node.alpha = 0.7
-    node.size = node.beginSize = node.goalSize = 50
-    node.x = node.beginX = node.goalX = (r + node.size) * Math.cos(radian) + (window.innerWidth / 2)
-    node.y = node.beginY = node.goalY = (r + node.size) * Math.sin(radian) + (window.innerHeight / 2)
+    node.size = node.beginSize = node.goalSize = 0
+    node.x = node.beginX = node.goalX = Math.random() * window.innerWidth
+    node.y = node.beginY = node.goalY = Math.random() * window.innerHeight
+    // node.x = node.beginX = node.goalX = (r + node.size) * Math.cos(radian) + (window.innerWidth / 2)
+    // node.y = node.beginY = node.goalY = (r + node.size) * Math.sin(radian) + (window.innerHeight / 2)
     node.dx = node.dy = node.goalDx = node.goalDy = 0
     node.width = node.height = node.size
     node.tintRadian = 0
@@ -115,6 +127,7 @@ function update (): void {
   const len: number = particlesLen
 
   const now: number = Date.now() / 500
+  const audioVol: number = getByteFrequencyDataAverage()
 
   for (let i: number = 0; i < len; i ++) {
     const node: Node = nodes[i]
@@ -136,9 +149,19 @@ function update (): void {
       container.addChild(node)
     }
 
+    if (audioVol && Math.random() > 0.99) {
+      node.size = node.beginSize = audioVol
+      node.sizeTime = 0
+
+      node.s = 0
+      node.v = 1
+
+      node.isFrashing = true
+    }
+
     const noiseX: number = node.isFrashing ? 0 : node.staggerRx * noise.perlin2(now - i, now)
     const noiseY: number = node.isFrashing ? 0 : node.staggerRy * noise.perlin2(now, now - i)
-    const noiseScale: number = node.isFrashing ? 0 : 10 * noise.perlin2(i / now, now)
+    const noiseScale: number = node.isFrashing || positionD === 1 ? 0 : 10 * noise.perlin2(i / now, now)
 
     const nodeX: number = (node.dx ? node.x + node.dx : node.beginX + positionD * (node.goalX - node.beginX)) + noiseX
     const nodeY: number = (node.dy ? node.y + node.dy : node.beginY + positionD * (node.goalY - node.beginY)) + noiseY
@@ -238,8 +261,8 @@ function flashAll (): void {
   for (let i: number = 0; i < particlesLen; i ++) {
     const node: Node = nodes[i]
 
-    node.dx = node.dx === 0 ? node.dx = Math.random() * -20 + 10 : node.dx * 1.5
-    node.dy = node.dy === 0 ? node.dy = Math.random() * -20 + 10 : node.dy * 1.5
+    node.dx = node.dx === 0 ? Math.random() * -20 + 10 : node.dx * 1.5
+    node.dy = node.dy === 0 ? Math.random() * -20 + 10 : node.dy * 1.5
 
     node.sizeTime = 0
 
@@ -253,4 +276,17 @@ function flashAll (): void {
 
     // node.isFrashing = true
   }
+}
+
+function getByteFrequencyDataAverage (): number {
+  analyser.getByteFrequencyData(frequencies)
+
+  return frequencies.reduce((prev, current): number => prev + current) / analyser.frequencyBinCount
+}
+
+function getUserMedia (): Promise<MediaStream> {
+  return navigator.mediaDevices.getUserMedia({
+    audio: true,
+    video: false
+  })
 }
