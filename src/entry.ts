@@ -112,9 +112,7 @@ function createNodes (texture: PIXI.BaseTexture): void {
     node.staggerRy = Math.random() * 10
     node.staggerSpeed = Math.random() * 10 + 2
     node.positionDelay = Math.random() * 3
-    node.positionTime = -node.positionDelay
-    node.sizeTime = 0
-    node.duration = Math.random() * 3 + 3
+    node.positionTime = node.sizeTime = node.duration = Math.random() * 3 + 3
     node.positionEase = easeOutCubic
     node.sizeEase = easeOutCubic
 
@@ -152,9 +150,6 @@ function update (): void {
     if (audioVol && Math.random() > 0.99) {
       node.size = node.beginSize = audioVol
       node.sizeTime = 0
-
-      node.s = 0
-      node.v = 1
 
       node.isFrashing = true
     }
@@ -229,6 +224,9 @@ function setTextPosition (positions: Position[]): void {
 
     node.positionTime = -node.positionDelay
     node.sizeTime = 0
+
+    node.duration = Math.random() * 5 + 3
+    node.positionEase = easeInOutCubic
   }
 
   clearTimeout(flushTimer)
@@ -242,18 +240,26 @@ function flush (): void {
   const centerX: number = winWidth / 2
   const centerY: number = winHeight / 2
 
-  const r: number = Math.sqrt(winWidth * winWidth + winHeight * winHeight) + 500
+  const r: number = Math.sqrt(winWidth * winWidth + winHeight * winHeight)
   const radius: number = Math.PI / 180
 
   for (let i: number = 0; i < particlesLen; i ++) {
     const node: Node = nodes[i]
     const radian: number = (Math.random() * 360) * radius
 
-    node.goalDx = Math.random() * -6 + 3
-    node.goalDy = Math.random() * -6 + 3
+    node.beginX = node.x
+    node.beginY = node.y
+    node.goalX = r * Math.cos(radian) * Math.random() + centerX
+    node.goalY = r * Math.sin(radian) * Math.random() + centerY
 
-    node.dx = Math.random() * -20 + 10
-    node.dy = Math.random() * -20 + 10
+    node.beginSize = node.size * Math.random() * 5
+    node.goalSize = 0
+    node.duration = Math.random() * 7 + 7
+
+    node.positionTime = 0
+    node.sizeTime = 0
+
+    node.positionEase = easeOutCubic
   }
 }
 
