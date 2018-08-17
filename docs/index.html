@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.2.0/css/all.css" integrity="sha384-hWVjflwFxL6sNzntih27bfxkr27PmbbK/iSvJ+a4+0owXq79v+lsFkW54bOGbiDQ" crossorigin="anonymous">
   <style>
     * {
       box-sizing: border-box;
@@ -14,24 +15,94 @@
       margin: 0;
       padding: 0;
     }
+    body {
+      overflow: hidden;
+    }
     canvas {
       display: block;
     }
-    .inputBox {
+
+    .action-box {
       position: absolute;
-      top: 0;
+      bottom: 0;
       left: 0;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 0.5em 0;
+    }
+
+    .action-box-text {
+      display: flex;
+    }
+
+    #inputText,
+    #fixText,
+    #speech {
+      font-size: 1rem;
+    }
+
+    #inputText {
+      outline: none;
+      border: none;
+      border-top-left-radius: 5px;
+      border-bottom-left-radius: 5px;
+      padding: 0.5em 0.7em;
+      background-color: darkgray;
+    }
+
+    #fixText,
+    #speech {
+      cursor: pointer;
+    }
+
+    #fixText {
+      outline: none;
+      border: none;
+      border-top-right-radius: 5px;
+      border-bottom-right-radius: 5px;
+      background-color: lightgray;
+      padding: 0 1em;
+      color: darkcyan;
+    }
+
+    #speech {
+      outline: none;
+      border: none;
+      margin-left: 1em;
+      background-color: darkgray;
+      color: slategrey;
+      display: block;
+      width: 2em;
+      height: 2em;
+      align-self: center;
+      border-radius: 3em;
+      font-size: 1.3rem;
+      padding: 0;
+      transition: color 100ms linear, background-color 100ms linear, transform 100ms ease;
+    }
+
+    #speech.is-recognizing {
+      color: teal;
+      background-color: white;
+      transform: scale(1.08);
     }
   </style>
-  <link href="https://fonts.googleapis.com/earlyaccess/sawarabimincho.css" rel="stylesheet" />
   <title>Voice Particle</title>
 </head>
 <body>
 <canvas id="app"></canvas>
-<div class="inputBox">
-  <input type="text" id="inputText">
-  <button type="button" id="fixText">GO</button>
-  <button type="button" id="speech">GO</button>
+<div class="action-box">
+  <div class="action-box-text">
+    <input type="text" id="inputText">
+    <button type="button" id="fixText">GO</button>
+  </div>
+  <div class="action-box-speech">
+    <button type="button" id="speech">
+      <i class="fas fa-microphone-alt"></i>
+    </button>
+  </div>
 </div>
 <script src="js/index.js"></script>
 </body>

@@ -16,7 +16,7 @@ export default (text: string): Position[] => {
   const fontSize: number = 80 / text.length
 
   context.textBaseline = 'top'
-  context.font = `${fontSize}vw "Sawarabi Mincho", helvetica, sans-serif`
+  context.font = `${fontSize}vw serif`
   const measure: TextMetrics = context.measureText(text)
   context.fillText(text, (window.innerWidth - measure.width) / 2, 0)
 

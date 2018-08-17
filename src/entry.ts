@@ -1,14 +1,16 @@
 import * as PIXI from 'pixi.js'
+import noise from 'simplenoise'
 import HSV2RGB from './HSV2RGB'
 import { easeOutCubic, easeInOutCubic } from './Ease'
 import EventEmitter, { EventName } from './EventEmitter'
 import { Position } from './GetTextPosition'
 import './Action'
-import noise from 'simplenoise'
+import './SpeechRecognition'
+import './window'
+import { startConnect, getByteFrequencyDataAverage } from './AudioContext'
 
-const audioContext: AudioContext = new AudioContext()
-const analyser: AnalyserNode = audioContext.createAnalyser()
-const frequencies: Uint8Array = new Uint8Array(analyser.frequencyBinCount)
+let sizeW: number = window.innerWidth
+let sizeH: number = window.innerHeight
 
 interface Node extends PIXI.Sprite {
   tintRadian: number
@@ -49,8 +51,8 @@ const $appEle: HTMLCanvasElement = document.getElementById('app') as HTMLCanvasE
 
 const app: PIXI.Application = new PIXI.Application({
   view: $appEle,
-  width: window.innerWidth,
-  height: window.innerHeight,
+  width: sizeW,
+  height: sizeH,
   backgroundColor: 0x171b23
 })
 
@@ -68,14 +70,7 @@ PIXI.loader
   .add('orb', './img/orb.svg')
   .load(async (loader, resources): Promise<void> => {
     createNodes(resources.orb.texture)
-    const stream: MediaStream | void = await getUserMedia().catch(error => console.log(error))
-
-    if (!stream) return
-
-    audioContext
-      .createMediaStreamSource(stream)
-      .connect(analyser)
-
+    await startConnect()
     app.ticker.add(update)
   })
 
@@ -83,25 +78,22 @@ EventEmitter.on(EventName.ON_INPUT_TEXT, (positions: Position[]): void => {
   setTextPosition(positions)
 })
 
-EventEmitter.on(EventName.ON_MOUSE_WHEEL, (): void => {
-  flashAll()
+EventEmitter.on(EventName.ON_WIN_RESIZE, (winWidth: number, winHeight: number): void => {
+  sizeW = winWidth
+  sizeH = winHeight
+
+  app.renderer.resize(winWidth, winHeight)
 })
 
 function createNodes (texture: PIXI.BaseTexture): void {
-  const r: number = Math.sqrt(window.innerWidth * window.innerWidth + window.innerHeight * window.innerHeight)
 
   for (let i: number = 0; i < particlesLen; i ++) {
     const node: Node = PIXI.Sprite.from(texture) as Node
-    const radian: number = (Math.random() * 360) * (Math.PI / 180)
-
     node.anchor.set(0.5, 0.5)
-
     node.alpha = 0.7
     node.size = node.beginSize = node.goalSize = 0
-    node.x = node.beginX = node.goalX = Math.random() * window.innerWidth
-    node.y = node.beginY = node.goalY = Math.random() * window.innerHeight
-    // node.x = node.beginX = node.goalX = (r + node.size) * Math.cos(radian) + (window.innerWidth / 2)
-    // node.y = node.beginY = node.goalY = (r + node.size) * Math.sin(radian) + (window.innerHeight / 2)
+    node.x = node.beginX = node.goalX = Math.random() * sizeW
+    node.y = node.beginY = node.goalY = Math.random() * sizeH
     node.dx = node.dy = node.goalDx = node.goalDy = 0
     node.width = node.height = node.size
     node.tintRadian = 0
@@ -154,21 +146,19 @@ function update (): void {
       node.isFrashing = true
     }
 
-    const noiseX: number = node.isFrashing ? 0 : node.staggerRx * noise.perlin2(now - i, now)
-    const noiseY: number = node.isFrashing ? 0 : node.staggerRy * noise.perlin2(now, now - i)
-    const noiseScale: number = node.isFrashing || positionD === 1 ? 0 : 10 * noise.perlin2(i / now, now)
-
-    const nodeX: number = (node.dx ? node.x + node.dx : node.beginX + positionD * (node.goalX - node.beginX)) + noiseX
-    const nodeY: number = (node.dy ? node.y + node.dy : node.beginY + positionD * (node.goalY - node.beginY)) + noiseY
-
-    node.x = nodeX
-    node.y = nodeY
     node.size = node.beginSize + sizeD * (node.goalSize - node.beginSize)
 
-    node.width = node.height = node.size + noiseScale
+    const ratio: number = now / (i + 1)
+    const noiseX: number = node.staggerRx * noise.perlin2(ratio, now)
+    const noiseY: number = node.staggerRy * noise.perlin2(now, ratio)
+    const noiseScale: number = node.isFrashing || positionD === 1 ? 0 : 10 * noise.perlin2(i / now, now)
+
+    let nodeX: number = (node.dx ? node.x + node.dx : node.beginX + positionD * (node.goalX - node.beginX)) + noiseX
+    let nodeY: number = (node.dy ? node.y + node.dy : node.beginY + positionD * (node.goalY - node.beginY)) + noiseY
+
+    const nodeSize: number = node.size + noiseScale
 
     node.tintRadian = (node.tintRadian + 0.4) % 360
-    node.tint = HSV2RGB(node.tintRadian, node.s, node.v)
 
     node.positionTime += 0.1
     node.sizeTime += 0.1
@@ -195,6 +185,11 @@ function update (): void {
       node.sizeTime = node.duration
       node.isFrashing = false
     }
+
+    node.x = nodeX
+    node.y = nodeY
+    node.width = node.height = nodeSize
+    node.tint = HSV2RGB(node.tintRadian, node.s, node.v)
   }
 }
 
@@ -219,7 +214,7 @@ function setTextPosition (positions: Position[]): void {
     node.beginX = node.x
     node.beginY = node.y
 
-    node.beginSize = node.size
+    node.beginSize = Math.random() * 20 + 10
     node.goalSize = nodeSize + Math.random() * 3
 
     node.positionTime = -node.positionDelay
@@ -234,8 +229,8 @@ function setTextPosition (positions: Position[]): void {
 }
 
 function flush (): void {
-  const winWidth: number = window.innerWidth
-  const winHeight: number = window.innerHeight
+  const winWidth: number = sizeW
+  const winHeight: number = sizeH
 
   const centerX: number = winWidth / 2
   const centerY: number = winHeight / 2
@@ -252,7 +247,7 @@ function flush (): void {
     node.goalX = r * Math.cos(radian) * Math.random() + centerX
     node.goalY = r * Math.sin(radian) * Math.random() + centerY
 
-    node.beginSize = node.size * Math.random() * 5
+    node.beginSize = node.size * Math.random() * 10
     node.goalSize = 0
     node.duration = Math.random() * 7 + 7
 
@@ -263,36 +258,23 @@ function flush (): void {
   }
 }
 
-function flashAll (): void {
-  for (let i: number = 0; i < particlesLen; i ++) {
-    const node: Node = nodes[i]
+// function flashAll (): void {
+//   for (let i: number = 0; i < particlesLen; i ++) {
+//     const node: Node = nodes[i]
 
-    node.dx = node.dx === 0 ? Math.random() * -20 + 10 : node.dx * 1.5
-    node.dy = node.dy === 0 ? Math.random() * -20 + 10 : node.dy * 1.5
+//     node.dx = node.dx === 0 ? Math.random() * -20 + 10 : node.dx * 1.5
+//     node.dy = node.dy === 0 ? Math.random() * -20 + 10 : node.dy * 1.5
 
-    node.sizeTime = 0
+//     node.sizeTime = 0
 
-    node.size = node.beginSize = Math.min(node.size * 5, 50)
+//     node.beginSize = Math.min(node.size * 5, 50)
 
-    // node.goalSize = node.size
-    // node.beginSize = node.size = Math.min(node.size * 5, 50)
+//     // node.goalSize = node.size
+//     // node.beginSize = node.size = Math.min(node.size * 5, 50)
 
-    // node.sizeTime = 0
-    node.sizeEase = easeOutCubic
+//     // node.sizeTime = 0
+//     node.sizeEase = easeOutCubic
 
-    // node.isFrashing = true
-  }
-}
-
-function getByteFrequencyDataAverage (): number {
-  analyser.getByteFrequencyData(frequencies)
-
-  return frequencies.reduce((prev, current): number => prev + current) / analyser.frequencyBinCount
-}
-
-function getUserMedia (): Promise<MediaStream> {
-  return navigator.mediaDevices.getUserMedia({
-    audio: true,
-    video: false
-  })
-}
+//     // node.isFrashing = true
+//   }
+// }
