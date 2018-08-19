@@ -10,7 +10,7 @@ const recognition = new SpeechRecognition()
 const recognizingClassName: string = 'is-recognizing'
 let isRecognizing: boolean = false
 
-recognition.lang = 'ja'
+recognition.lang = navigator.language || 'ja'
 
 recognition.addEventListener('result', onResult, false)
 recognition.addEventListener('start', onStart, false)

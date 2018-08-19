@@ -28,7 +28,8 @@ interface Node extends PIXI.Sprite {
   positionTime: number
   positionDelay: number
   sizeTime: number
-  duration: number
+  sizeDuration: number
+  positionDuration: number
   beginX: number
   beginY: number
   beginSize: number
@@ -40,9 +41,10 @@ interface Node extends PIXI.Sprite {
   positionEase: Function
   sizeEase: Function
   isFrashing: boolean
+  accelable: boolean
 }
 
-const particlesLen: number = 10000
+const particlesLen: number = 8000
 let flushTimer: number
 
 const nodes: Node[] = []
@@ -104,7 +106,7 @@ function createNodes (texture: PIXI.BaseTexture): void {
     node.staggerRy = Math.random() * 10
     node.staggerSpeed = Math.random() * 10 + 2
     node.positionDelay = Math.random() * 3
-    node.positionTime = node.sizeTime = node.duration = Math.random() * 3 + 3
+    node.positionTime = node.sizeTime = node.positionDuration = node.sizeDuration = Math.random() * 3 + 3
     node.positionEase = easeOutCubic
     node.sizeEase = easeOutCubic
 
@@ -115,20 +117,17 @@ function createNodes (texture: PIXI.BaseTexture): void {
 
 function update (): void {
   const len: number = particlesLen
-
   const now: number = Date.now() / 500
   const audioVol: number = getByteFrequencyDataAverage()
+  const parlinNoise: Function = noise.perlin2
 
   for (let i: number = 0; i < len; i ++) {
     const node: Node = nodes[i]
     const positionTime: number = node.positionTime < 0 ? 0 : node.positionTime
     const sizeTime: number = node.sizeTime < 0 ? 0 : node.sizeTime
 
-    const positionD: number = node.positionEase(positionTime / node.duration)
-    const sizeD: number = node.sizeEase(sizeTime / node.duration)
-
     if (Math.random() > 0.99999) {
-      node.size = node.beginSize = node.size * (Math.random() * 10 + 5)
+      node.beginSize = Math.random() * 10 + 10
       node.sizeTime = 0
 
       node.s = 0
@@ -140,23 +139,23 @@ function update (): void {
     }
 
     if (audioVol && Math.random() > 0.99) {
-      node.size = node.beginSize = audioVol
+      node.beginSize = audioVol
       node.sizeTime = 0
 
       node.isFrashing = true
     }
 
+    const sizeD: number = node.sizeEase(sizeTime / node.sizeDuration)
     node.size = node.beginSize + sizeD * (node.goalSize - node.beginSize)
 
-    const ratio: number = now / (i + 1)
-    const noiseX: number = node.staggerRx * noise.perlin2(ratio, now)
-    const noiseY: number = node.staggerRy * noise.perlin2(now, ratio)
-    const noiseScale: number = node.isFrashing || positionD === 1 ? 0 : 10 * noise.perlin2(i / now, now)
-
-    let nodeX: number = (node.dx ? node.x + node.dx : node.beginX + positionD * (node.goalX - node.beginX)) + noiseX
-    let nodeY: number = (node.dy ? node.y + node.dy : node.beginY + positionD * (node.goalY - node.beginY)) + noiseY
-
+    const ratio: number = now / (i + 2)
+    const noiseX: number = node.staggerRx * parlinNoise(ratio, now)
+    const noiseY: number = node.staggerRy * parlinNoise(now, ratio)
+    const noiseScale: number = node.isFrashing ? 0 : 10 * parlinNoise(i / now, now)
     const nodeSize: number = node.size + noiseScale
+
+    let nodeX: number = noiseX
+    let nodeY: number = noiseY
 
     node.tintRadian = (node.tintRadian + 0.4) % 360
 
@@ -166,8 +165,34 @@ function update (): void {
     node.s += 0.03
     node.v -= 0.03
 
-    node.dx += (node.goalDx - node.dx) / 20
-    node.dy += (node.goalDy - node.dy) / 20
+    if (node.accelable) {
+      nodeX += node.x + node.dx
+      nodeY += node.y + node.dy
+
+      node.dx += (node.goalDx - node.dx) / 50
+      node.dy += (node.goalDy - node.dy) / 50
+
+      // if (nodeX + nodeSize < 0) {
+      //   nodeX = sizeW + nodeSize
+      // }
+
+      // if (nodeX - nodeSize > sizeW) {
+      //   nodeX = -nodeSize
+      // }
+
+      // if (nodeY + nodeSize < 0) {
+      //   nodeY = sizeH + nodeSize
+      // }
+
+      // if (nodeY - nodeSize > sizeH) {
+      //   nodeY = -nodeSize
+      // }
+    } else {
+      const positionD: number = node.positionEase(positionTime / node.positionDuration)
+
+      nodeX += node.beginX + positionD * (node.goalX - node.beginX)
+      nodeY += node.beginY + positionD * (node.goalY - node.beginY)
+    }
 
     if (node.s >= node.goalS) {
       node.s = node.goalS
@@ -177,12 +202,12 @@ function update (): void {
       node.v = node.goalV
     }
 
-    if (node.positionTime >= node.duration) {
-      node.positionTime = node.duration
+    if (node.positionTime >= node.positionDuration) {
+      node.positionTime = node.positionDuration
     }
 
-    if (node.sizeTime >= node.duration) {
-      node.sizeTime = node.duration
+    if (node.sizeTime >= node.sizeDuration) {
+      node.sizeTime = node.sizeDuration
       node.isFrashing = false
     }
 
@@ -215,13 +240,16 @@ function setTextPosition (positions: Position[]): void {
     node.beginY = node.y
 
     node.beginSize = Math.random() * 20 + 10
-    node.goalSize = nodeSize + Math.random() * 3
+    node.goalSize = Math.random() * 3 + 3
 
     node.positionTime = -node.positionDelay
     node.sizeTime = 0
+    node.sizeDuration = Math.random() * 3 + 3
 
-    node.duration = Math.random() * 5 + 3
+    node.positionDuration = Math.random() * 5 + 3
     node.positionEase = easeInOutCubic
+
+    node.accelable = false
   }
 
   clearTimeout(flushTimer)
@@ -232,29 +260,34 @@ function flush (): void {
   const winWidth: number = sizeW
   const winHeight: number = sizeH
 
-  const centerX: number = winWidth / 2
-  const centerY: number = winHeight / 2
+  // const centerX: number = winWidth / 2
+  // const centerY: number = winHeight / 2
 
-  const r: number = Math.sqrt(winWidth * winWidth + winHeight * winHeight)
-  const radius: number = Math.PI / 180
+  // const r: number = Math.sqrt(winWidth * winWidth + winHeight * winHeight)
+  // const radius: number = Math.PI / 180
 
   for (let i: number = 0; i < particlesLen; i ++) {
     const node: Node = nodes[i]
-    const radian: number = (Math.random() * 360) * radius
+    // const radian: number = (Math.random() * 360) * radius
 
-    node.beginX = node.x
-    node.beginY = node.y
-    node.goalX = r * Math.cos(radian) * Math.random() + centerX
-    node.goalY = r * Math.sin(radian) * Math.random() + centerY
+    // node.beginX = node.x
+    // node.beginY = node.y
+    // node.goalX = r * Math.cos(radian) * Math.random() + centerX
+    // node.goalY = r * Math.sin(radian) * Math.random() + centerY
 
-    node.beginSize = node.size * Math.random() * 10
-    node.goalSize = 0
-    node.duration = Math.random() * 7 + 7
+    node.beginSize = Math.random() * 10 + 10
+    // node.positionDuration = Math.random() * 7 + 7
 
-    node.positionTime = 0
+    // node.positionTime = 0
     node.sizeTime = 0
+    node.sizeDuration = Math.random() * 5 + 5
+    node.goalSize = 0
 
-    node.positionEase = easeOutCubic
+    // node.positionEase = easeOutCubic
+
+    node.dx = Math.random() * -40 + 20
+    node.dy = Math.random() * -40 + 20
+    node.accelable = true
   }
 }
 
